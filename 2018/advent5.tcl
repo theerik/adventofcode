@@ -31,11 +31,11 @@ proc react {polyin} {
     while {[llength $remainL] > 0} {
         if {([string tolower [lindex $outL end]] eq [string tolower [lindex $remainL 0]]) &&
                 ([lindex $outL end] ne [lindex $remainL 0])} {
-            set outL [lreplace $outL end end]
-            set remainL [lreplace $remainL 0 0]
+            set outL [lrange $outL 0 end-1]
+            set remainL [lrange $remainL 1 end]
         } else {
             lappend outL [lindex $remainL 0]
-            set remainL [lreplace $remainL 0 0]
+            set remainL [lrange $remainL 1 end]
         }
     }
     return [llength $outL]
@@ -53,5 +53,7 @@ for {set letter 0x41} {$letter < 0x5B} {incr letter} {
     set mapStr [format "%c \"\" %c \"\"" $letter [expr $letter + 0x20]]
     set newPoly [string map $mapStr $input]
     lappend lengthL [react $newPoly]
+puts -nonewline [format "%c" $letter]
+flush stdout
 }
 puts "\n\nShortest polymer: [::math::min {*}$lengthL]"

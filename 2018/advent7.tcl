@@ -47,8 +47,7 @@ while {[llength $doneL] != [llength $stepL]} {
     # If multiple tasks are ready, do them in alphabetical order
     set taskL [lsort $taskL]
     # "Complete" the task
-    set current [lindex $taskL 0]
-    set taskL [lreplace $taskL 0 0]
+    set taskL [lassign $taskL current]
     lappend doneL $current
     # Process children
     if [info exists stepMap($current,children)] {
@@ -87,16 +86,13 @@ set activeL {}
 while {[llength $doneL] != [llength $stepL]} {
     # Allocate new tasks if possible, up to the limit of 5 workers.
     while {([llength $taskL] > 0) && ([llength $activeL] <= 5)} {
-        set newstep [lindex $taskL 0]
-        set taskL [lreplace $taskL 0 0]
+        set taskL [lassign $taskL newstep]
         lappend activeL [list [expr {$currTime + [taskDuration $newstep]}] $newstep]
     }
 
     # Process the next complete task.
-    set complete [lindex $activeL 0]
-    set activeL [lreplace $activeL 0 0]
-    set currTime [lindex $complete 0]
-    set current [lindex $complete 1]
+    set activeL [lassign $activeL complete]
+    lassign $complete currTime current
     lappend doneL $current
 
     # Process children
@@ -114,4 +110,3 @@ while {[llength $doneL] != [llength $stepL]} {
 }
 puts "Total duration was: $currTime"
 puts "Actually completed order was [join $doneL ""]"
-
