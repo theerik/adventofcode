@@ -7,22 +7,12 @@ package require math
 package require struct::matrix
 namespace import ::tcl::mathop::*
 
-# Get input from file
-set fhandle [open "temp.txt"]
-#set fhandle [open "advent11.txt"]
-set input [read -nonewline $fhandle]
-close $fhandle
-
 # Day 11: Chronal Charge
 #
 # Given a seed, compute a complex iterative function over a 300x300 array.
-#
-
-proc subtotal {x y size} {
-    return [expr { $::sapA($x,$y) - $::sapA([+ $x $size],$y)
-                 - $::sapA($x,[+ $y 1]) + $::sapA([+ $x 1],[+ $y 1]) }]
-}
-
+# After doing it wrong, I got a pointer to a new algorithmic concept called
+# "summed-area table" (https://en.wikipedia.org/wiki/Summed-area_table).
+# To start, use the input seed and the wierd algo to build the table.
 set input 1309
 for {set x 0} {$x <= 300} {incr x} {set sapA($x,0) 0}
 for {set y 1} {$y <= 300} {incr y} {
@@ -37,14 +27,16 @@ for {set y 1} {$y <= 300} {incr y} {
                                 - $sapA([- $x 1],[- $y 1]) }]
     }
 }
-puts "Matrix built."
+puts "Summed-area table built."
 
 # Part 1:
 # Find the UL corner of the 3x3 subgrid with the highest total power
-
+#
 # Part 2:
 # Find the UL corner of the subgrid of ANY size with the highest total power.
-
+#
+# Scan the table, looking at every possible size for every pixel.  Track the
+# maximum total of subgrids of size==3, and of all size subgrids.
 set max3Tot 0
 set maxTot 0
 for {set y 1} {$y <= 300} {incr y} {
@@ -72,7 +64,6 @@ for {set y 1} {$y <= 300} {incr y} {
     }
     puts -nonewline "." ; flush stdout
 }
-
 
 puts "\nThe corner of the highest 3x3 subtotal ($max3Tot) is $max3X,$max3Y"
 puts "The corner of the highest any size subtotal ($maxTot) is $maxX,$maxY,$maxSize"
