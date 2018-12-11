@@ -18,10 +18,9 @@ close $fhandle
 # Part 1: React the Polymer
 # Find the remaining length after fully reacting the polymer.
 
-# Create an output string.  We will transfer characters to it one at a time.
-# We compare the last letter of the output to the first letter of the remainder.
-# If they react, both are removed and we do it again until they don't react.
-# Then move on to the next letter.
+# Use an index to walk the list. Compare the index letter to the index+1 letter.
+# If they react, both are removed and we decrement the index so we can do it
+# again until they don't react.  If no reaction, increment the index.
 
 # We end up needing this in both parts, so make a proc out of it.
 proc react {polyin} {
