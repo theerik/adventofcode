@@ -26,19 +26,19 @@ close $fhandle
 # We end up needing this in both parts, so make a proc out of it.
 proc react {polyin} {
     set remainL [split $polyin ""]
-    set outL {}
+    set idx 0
 
-    while {[llength $remainL] > 0} {
-        if {([string tolower [lindex $outL end]] eq [string tolower [lindex $remainL 0]]) &&
-                ([lindex $outL end] ne [lindex $remainL 0])} {
-            set outL [lrange $outL 0 end-1]
-            set remainL [lrange $remainL 1 end]
+    while {$idx < [llength $remainL]} {
+        lassign [lrange $remainL $idx $idx+1] base1 base2
+        if {([string tolower $base1] eq [string tolower $base2]) &&
+                ($base1 ne $base2)} {
+            set remainL [lreplace $remainL[set remainL {}] $idx $idx+1]
+            incr idx -1     ;# Re-evaluate base formed by newly adjacent pair
         } else {
-            lappend outL [lindex $remainL 0]
-            set remainL [lrange $remainL 1 end]
+            incr idx
         }
     }
-    return [llength $outL]
+    return [llength $remainL]
 }
 puts "Ending length: [react $input]"
 
@@ -53,7 +53,7 @@ for {set letter 0x41} {$letter < 0x5B} {incr letter} {
     set mapStr [format "%c \"\" %c \"\"" $letter [expr $letter + 0x20]]
     set newPoly [string map $mapStr $input]
     lappend lengthL [react $newPoly]
-puts -nonewline [format "%c" $letter]
-flush stdout
+    puts -nonewline [format "%c" $letter]
+    flush stdout
 }
 puts "\n\nShortest polymer: [::math::min {*}$lengthL]"

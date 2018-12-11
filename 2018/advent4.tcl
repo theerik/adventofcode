@@ -27,37 +27,34 @@ close $fhandle
 set inL [lsort [split $input "\n"]]
 
 # Read input, extract data
-set gPattern {\[(.+)] Guard #([0-9]+) begins shift}
-set sPattern {\[(.+)] falls asleep}
-set wPattern {\[(.+)] wakes up}
 set dateFmt "%Y-%m-%d %H:%M"
-
 foreach line $inL {
     # Get the parameters
-    # timestamps are in seconds, so / 60
-    if {![regexp -- $gPattern $line match timestamp guardNum]} {
-        if {![regexp -- $sPattern $line match timestamp]} {
-            if {![regexp -- $wPattern $line match timestamp]} {
-                puts "unparsable line $line"
-                exit
-            } else {
-                # Wakeup
-                set wakemin [scan [clock format [clock scan $timestamp -format $dateFmt] -format "%M"] "%d"]
-                incr guardsleeps(total,$guardNum) [expr {$wakemin - $sleepmin}]
-                for {set idx $sleepmin} {$idx < $wakemin} {incr idx} {
-                    set guardsleeps(map,$guardNum) [lreplace $guardsleeps(map,$guardNum) \
-                            $idx $idx [expr {[lindex $guardsleeps(map,$guardNum) $idx] + 1}]]
-                }
+    # timestamps are in seconds, so remember to / 60 for mins
+    switch -regexp -matchvar matchL -- $line {
+        {\[(.+)] Guard #([0-9]+) begins shift} {
+            set gdNum [lindex $matchL 2]
+            if {![info exists napLog(map,$gdNum)]} {
+                # new guards get new maps
+                set napLog(map,$gdNum) [lrepeat 60 0]
             }
-        } else {
-            # Sleep
-            set sleepmin [scan [clock format [clock scan $timestamp -format $dateFmt] -format "%M"] "%d"]
         }
-    } else {
-        # NewGuard
-        if {![info exists guardsleeps(map,$guardNum)]} {
-            # new guards get new maps
-            set guardsleeps(map,$guardNum) [lrepeat 60 0]
+        {\[(.+)] falls asleep} {
+            set sleepmin [scan [clock format [clock scan [lindex $matchL 1] \
+                                    -format $dateFmt] -format "%M"] "%d"]
+        }
+        {\[(.+)] wakes up} {
+            set wakemin [scan [clock format [clock scan [lindex $matchL 1] \
+                                    -format $dateFmt] -format "%M"] "%d"]
+            incr napLog(total,$gdNum) [expr {$wakemin - $sleepmin}]
+            for {set idx $sleepmin} {$idx < $wakemin} {incr idx} {
+                set napLog(map,$gdNum) [lreplace $napLog(map,$gdNum) \
+                        $idx $idx [expr {[lindex $napLog(map,$gdNum) $idx] + 1}]]
+            }
+        }
+        default {
+            puts "unparsable line $line"
+            exit
         }
     }
 }
@@ -73,27 +70,27 @@ set maxguard 0
 set maxminute 0
 set maxminguard 0
 
-foreach guard [array names guardsleeps total,*] {
-    set guardNum [string range $guard 6 end]
+foreach guard [array names napLog total,*] {
+    set gdNum [string range $guard 6 end]
     # Part 1: Find the guard with the highest total time
-    if {$guardsleeps(total,$guardNum) > $maxsleep} {
-        set maxsleep $guardsleeps(total,$guardNum)
-        set maxguard $guardNum
+    if {$napLog(total,$gdNum) > $maxsleep} {
+        set maxsleep $napLog(total,$gdNum)
+        set maxguard $gdNum
     }
     # Part 2: Find the guard with the highest individual minute total
-    set guardsleeps(max,$guardNum) [::math::max {*}$guardsleeps(map,$guardNum)]
-    if {$guardsleeps(max,$guardNum) > $maxminute} {
-        set maxminute $guardsleeps(max,$guardNum)
-        set maxminguard $guardNum
+    set napLog(max,$gdNum) [::math::max {*}$napLog(map,$gdNum)]
+    if {$napLog(max,$gdNum) > $maxminute} {
+        set maxminute $napLog(max,$gdNum)
+        set maxminguard $gdNum
     }
 }
 
 # Part 1:
-set target [lsearch $guardsleeps(map,$maxguard) $guardsleeps(max,$maxguard)]
-puts "Guard $maxguard slept for [lindex $guardsleeps(map,$maxguard) $target] minutes in minute $target."
+set target [lsearch $napLog(map,$maxguard) $napLog(max,$maxguard)]
+puts "Guard $maxguard slept for [lindex $napLog(map,$maxguard) $target] minutes in minute $target."
 puts "Result is [expr {$maxguard * $target}]\n"
 
 # Part 2:
-set target [lsearch $guardsleeps(map,$maxminguard) $guardsleeps(max,$maxminguard)]
-puts "Guard $maxminguard was asleep at minute $target $guardsleeps(max,$maxminguard) times."
+set target [lsearch $napLog(map,$maxminguard) $napLog(max,$maxminguard)]
+puts "Guard $maxminguard was asleep at minute $target $napLog(max,$maxminguard) times."
 puts "Result is [expr {$maxminguard * $target}]\n"
