@@ -57,4 +57,3 @@ foreach pot [lsearch -all [split $potS ""] "#"] {
 }
 puts "After 20 generations, $total"
 # [string repeat " " [expr {$numGens - $idx - 1}]]
-# [expr {$pot - $numGens}]
